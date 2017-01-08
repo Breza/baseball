@@ -1,0 +1,2 @@
+# baseball
+Adventures in sabermetrics
