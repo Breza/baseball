@@ -3,22 +3,85 @@ title: "Time to go"
 output: html_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+When should a fan leave a baseball game based solely on the score? Ever since I was a child, I 
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+```{r prep, echo = TRUE}
+library(tidyverse)
+library(stringr)
+library(rvest)
+library(readr)
 
-```{r links, echo = TRUE}
+```
 
-# List all hyperlinks on page
+Data are from Retrosheet, which requires the following attribution:
+"The information used here was obtained free of charge from and is copyrighted by Retrosheet.  Interested parties may contact Retrosheet at [www.retrosheet.org](www.retrosheet.org)."
+
+Column names are taken from the source code of the `retrosheet` package.
+
+```{r data, echo = TRUE}
+### Acquire and clean data
+
+# Unzip files to the working directory
+get_retrosheet <- function() {
+  
+  # List all hyperlinks on page
 links <- read_html("http://www.retrosheet.org/gamelogs/") %>%
   html_nodes("a") %>%
   html_attr("href")
 
-# Extract links to game files
-links <- links[str_detect(links, "http://www.retrosheet.org/gamelogs/gl[0-9][0-9][0-9][0-9]_[0-9][0-9].*zip")]
+  # Only keep the links to aggregated game files
+  links <- links[str_detect(links, "http://www.retrosheet.org/gamelogs/gl[0-9][0-9][0-9][0-9]_[0-9][0-9].*zip")]
+  links <- links[!is.na(links)]
+  
+  # Download and unzip all files
+  lapply(links, function(x) {file_name <- basename(url)
+    download.file(x, file_name)
+    unzip(file_name)
+    TRUE})
+  
+  file_list <- list.files(pattern = "GL[0-9][0-9][0-9][0-9]\\.TXT$")
+  dataset <- lapply(file_list, function(x) read_csv(x, col_names = FALSE)) %>%
+    do.call("rbind", .) %>%
+    tbl_df()
+
+# Column names from the retrosheet package
+names(dataset) <- c("Date", "DblHdr", "Day", "VisTm", "VisTmLg", "VisTmGNum", "HmTm",
+    "HmTmLg", "HmTmGNum", "VisRuns", "HmRuns", "NumOuts", "DayNight",
+    "Completion", "Forfeit", "Protest", "ParkID", "Attendance", "Duration",
+    "VisLine", "HmLine", "VisAB", "VisH", "VisD", "VisT", "VisHR",
+    "VisRBI", "VisSH", "VisSF", "VisHBP", "VisBB", "VisIBB", "VisK",
+    "VisSB", "VisCS", "VisGDP", "VisCI", "VisLOB", "VisPs", "VisER",
+    "VisTER", "VisWP", "VisBalks", "VisPO", "VisA", "VisE", "VisPassed",
+    "VisDB", "VisTP", "HmAB", "HmH", "HmD", "HmT", "HmHR", "HmRBI",
+    "HmSH", "HmSF", "HmHBP", "HmBB", "HmIBB", "HmK", "HmSB", "HmCS",
+    "HmGDP", "HmCI", "HmLOB", "HmPs", "HmER", "HmTER", "HmWP", "HmBalks",
+    "HmPO", "HmA", "HmE", "HmPass", "HmDB", "HmTP", "UmpHID", "UmpHNm",
+    "Ump1BID", "Ump1BNm", "Ump2BID", "Ump2BNm", "Ump3BID", "Ump3BNm",
+    "UmpLFID", "UmpLFNm", "UmpRFID", "UmpRFNm", "VisMgrID", "VisMgrNm",
+    "HmMgrID", "HmMgrNm", "WinPID", "WinPNm", "PID", "PNAme", "SavePID",
+    "SavePNm", "GWinRBIID", "GWinRBINm", "VisStPchID", "VisStPchNm",
+    "HmStPchID", "HmStPchNm", "VisBat1ID", "VisBat1Nm", "VisBat1Pos",
+    "VisBat2ID", "VisBat2Nm", "VisBat2Pos", "VisBat3ID", "VisBat3Nm",
+    "VisBat3Pos", "VisBat4ID", "VisBat4Nm", "VisBat4Pos", "VisBat5ID",
+    "VisBat5Nm", "VisBat5Pos", "VisBat6ID", "VisBat6Nm", "VisBat6Pos",
+    "VisBat7ID", "VisBat7Nm", "VisBat7Pos", "VisBat8ID", "VisBat8Nm",
+    "VisBat8Pos", "VisBat9ID", "VisBat9Nm", "VisBat9Pos", "HmBat1ID",
+    "HmBat1Nm", "HmBat1Pos", "HmBat2ID", "HmBat2Nm", "HmBat2Pos",
+    "HmBat3ID", "HmBat3Nm", "HmBat3Pos", "HmBat4ID", "HmBat4Nm",
+    "HmBat4Pos", "HmBat5ID", "HmBat5Nm", "HmBat5Pos", "HmBat6ID",
+    "HmBat6Nm", "HmBat6Pos", "HmBat7ID", "HmBat7Nm", "HmBat7Pos",
+    "HmBat8ID", "HmBat8Nm", "HmBat8Pos", "HmBat9ID", "HmBat9Nm",
+    "HmBat9Pos", "Additional", "Acquisition")
+
+return(dataset)
+}
 
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+```{r analysis}
+### Perform analysis
+
+```
+
