@@ -3,20 +3,22 @@ title: "Time to go"
 output: html_notebook
 ---
 
-When should a fan leave a baseball game based solely on the score? Ever since I was a child, I 
+When should a fan leave a baseball game based solely on the score? Ever since I was a child, my father and I have disagreed over this point.
 
 ```{r prep, echo = TRUE}
 library(tidyverse)
 library(stringr)
 library(rvest)
 library(readr)
+library(reshape2)
+library(lubridate)
 
 ```
 
-Data are from Retrosheet, which requires the following attribution:
+Baseball data come from Retrosheet, which requires the following attribution:
 "The information used here was obtained free of charge from and is copyrighted by Retrosheet.  Interested parties may contact Retrosheet at [www.retrosheet.org](www.retrosheet.org)."
 
-Column names are taken from the source code of the `retrosheet` package.
+For convenice, I took the column names from the source code of the `retrosheet` package.
 
 ```{r data, echo = TRUE}
 ### Acquire and clean data
@@ -34,7 +36,7 @@ links <- read_html("http://www.retrosheet.org/gamelogs/") %>%
   links <- links[!is.na(links)]
   
   # Download and unzip all files
-  lapply(links, function(x) {file_name <- basename(url)
+  lapply(links, function(x) {file_name <- basename(x.)
     download.file(x, file_name)
     unzip(file_name)
     TRUE})
@@ -45,6 +47,7 @@ links <- read_html("http://www.retrosheet.org/gamelogs/") %>%
     tbl_df()
 
 # Column names from the retrosheet package
+# I use all of the names here even though I ignore most of the variables
 names(dataset) <- c("Date", "DblHdr", "Day", "VisTm", "VisTmLg", "VisTmGNum", "HmTm",
     "HmTmLg", "HmTmGNum", "VisRuns", "HmRuns", "NumOuts", "DayNight",
     "Completion", "Forfeit", "Protest", "ParkID", "Attendance", "Duration",
@@ -73,11 +76,65 @@ names(dataset) <- c("Date", "DblHdr", "Day", "VisTm", "VisTmLg", "VisTmGNum", "H
     "HmBat8ID", "HmBat8Nm", "HmBat8Pos", "HmBat9ID", "HmBat9Nm",
     "HmBat9Pos", "Additional", "Acquisition")
 
+# Save dataset to a feather file?
+
+# Parse the box score. Possibly replace any ([0-9][0-9]) with a
+# character whose code is equal to the number of runs plus some number.
+# Then make the data long and convert those characters back to numbers.
+for(i in 10:47) {
+  dataset$HmLine <- str_replace_all(dataset$HmLine, paste0("\\(", i, "\\)"), paste0("\\",rawToChar(as.raw(i))))
+  dataset$VisLine <- str_replace_all(dataset$VisLine, paste0("\\(", i, "\\)"), paste0("\\",rawToChar(as.raw(i))))
+}
+
+dataset$HmLine <- str_replace_all(dataset$HmLine, "x", 0)
+dataset$VisLine <- str_replace_all(dataset$VisLine, "x", 0)
+
+dataset <- dataset %>%
+  mutate(gamecode = paste(Date, VisTm, HmTm, DblHdr, sep = "_")) %>%
+  select(gamecode, Date, VisRuns, HmRuns, HmLine, VisLine) %>%
+  mutate(Date = ymd(Date)) %>%
+  mutate(winner = "tie") %>%
+  filter(!is.na(HmLine)) %>%
+  filter(!is.na(VisLine)) %>%
+  arrange(desc(Date))
+
+# Remove all extra innings
+dataset$HmLine <- str_sub(dataset$HmLine, start = 1L, end = 9L)
+dataset$VisLine <- str_sub(dataset$VisLine, start = 1L, end = 9L)
+
+# Create one column for each half inning
+hmline <- str_split(dataset$HmLine, pattern = "", simplify = TRUE) %>% tbl_df()
+names(hmline) <- paste0("inning", 1:9, "hm")
+visline <- str_split(dataset$VisLine, pattern = "", simplify = TRUE) %>% tbl_df()
+names(visline) <- paste0("inning", 1:9, "vis")
+
+for(i in 10:47) {
+  hmline <- apply(hmline, MARGIN = 2, function(x) str_replace_all(x, paste0("\\",rawToChar(as.raw(i))), i))
+  visline <- apply(visline, MARGIN = 2, function(x) str_replace_all(x, paste0("\\",rawToChar(as.raw(i))), i))
+}
+
+dataset <- select(dataset, -HmLine, -VisLine)
+dataset <- cbind(dataset, hmline, visline)
+
+dataset[,6:23] <- apply(dataset[,6:23], MARGIN = 2, as.numeric)
+
+# How many runs did each team score without counting extra innings?
+dataset$VisRunsReg <- apply(dataset[,6:14], MARGIN = 1, FUN = sum, na.rm = TRUE)
+dataset$HmRunsReg <- apply(dataset[,15:23], MARGIN = 1, FUN = sum, na.rm = TRUE)
+
+dataset <- tbl_df(dataset)
+
 return(dataset)
 }
 
 ```
 
+Now that we have the data, let's look for trends that might affect our analysis. For example, how common are runs in a baseball game? Has scoring changed since the 19th century?
+
+```{r eda}
+### Exploratory data analysis
+
+```
 
 
 ```{r analysis}
