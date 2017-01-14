@@ -371,7 +371,12 @@ dad <- function(dataset) {
     arrange(team) %>%
     summarise(win_lead = first(value, order_by = team))
     
-  
+  dataset %>%
+    group_by(gamecode, team) %>%
+    mutate(score = cumsum(value)) %>%
+    filter(winner != "tie") %>%
+    filter(inning == 9)
+
 }
 ```
 
