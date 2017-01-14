@@ -353,8 +353,21 @@ Now that we have the data, let's look for trends that might affect our analysis.
 It's time to create an algorithm to determine the probability of a reversal when given a properly formatted dataset of scoring events throughout a collection of games. I'm naming this function "dad" because my father has traditionally been the one to determine when it's time to leave.
 
 ```{r dad}
-dad <- function() {
-  return(TRUE)
+dad <- function(dataset) {
+  
+  if(!is.data.frame(dataset)) {
+    stop("dataset must be dataframe or tibble")
+  }
+  if(length(unique(dataset$gamecode)) < 2) {
+    stop("dataset must contain data from multiple games")
+  }
+  
+  dataset %>%
+    group_by(gamecode, team) %>%
+    mutate(score = cumsum(value)) %>%
+    filter(winner != "tie") %>%
+    filter(inning == 9)
+  
 }
 ```
 
