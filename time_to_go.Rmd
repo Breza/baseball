@@ -3,129 +3,343 @@ title: "Time to go"
 output: html_notebook
 ---
 
-When should a fan leave a baseball game based solely on the score? Ever since I was a child, my father and I have disagreed over this point.
+When should a fan leave a baseball game based solely on the score? Ever since I was a child, my father and I have disagreed over this point. His philosophy is that it's best to leave a game as soon as it's obvious who is going to win in order to beat the traffic. We've left too many games only to miss a late comeback. This made me curious about when we really should be leaving.
 
-```{r prep, echo = TRUE}
+```{r prep, echo = TRUE, message=F, error=FALSE}
 library(tidyverse)
 library(stringr)
 library(rvest)
-library(readr)
-library(reshape2)
 library(lubridate)
 
 ```
 
 Baseball data come from Retrosheet, which requires the following attribution:
-"The information used here was obtained free of charge from and is copyrighted by Retrosheet.  Interested parties may contact Retrosheet at [www.retrosheet.org](www.retrosheet.org)."
-
-For convenice, I took the column names from the source code of the `retrosheet` package.
+"The information used here was obtained free of charge from and is copyrighted by Retrosheet.  Interested parties may contact Retrosheet at [www.retrosheet.org](www.retrosheet.org)." For convenice, I took the column names from the source code of the `retrosheet` package.
 
 ```{r data, echo = TRUE}
 ### Acquire and clean data
 
 # Unzip files to the working directory
 get_retrosheet <- function() {
-  
-  # List all hyperlinks on page
+# List all hyperlinks on page
 links <- read_html("http://www.retrosheet.org/gamelogs/") %>%
-  html_nodes("a") %>%
-  html_attr("href")
+html_nodes("a") %>%
+html_attr("href")
 
-  # Only keep the links to aggregated game files
-  links <- links[str_detect(links, "http://www.retrosheet.org/gamelogs/gl[0-9][0-9][0-9][0-9]_[0-9][0-9].*zip")]
-  links <- links[!is.na(links)]
-  
-  # Download and unzip all files
-  lapply(links, function(x) {file_name <- basename(x.)
-    download.file(x, file_name)
-    unzip(file_name)
-    TRUE})
-  
-  file_list <- list.files(pattern = "GL[0-9][0-9][0-9][0-9]\\.TXT$")
-  dataset <- lapply(file_list, function(x) read_csv(x, col_names = FALSE)) %>%
-    do.call("rbind", .) %>%
-    tbl_df()
+# Only keep links to aggregated game files
+links <-
+links[str_detect(
+links,
+"http://www.retrosheet.org/gamelogs/gl[0-9][0-9][0-9][0-9]_[0-9][0-9].*zip"
+)]
+links <- links[!is.na(links)]
+
+# Download and unzip all files
+lapply(links, function(x) {
+file_name <- basename(x)
+download.file(x, file_name)
+unzip(file_name)
+TRUE
+})
+
+file_list <- list.files(pattern = "GL[0-9][0-9][0-9][0-9]\\.TXT$")
+dataset <-
+lapply(file_list, function(x)
+read_csv(x, col_names = FALSE)) %>%
+do.call("rbind", .) %>%
+tbl_df()
 
 # Column names from the retrosheet package
-# I use all of the names here even though I ignore most of the variables
-names(dataset) <- c("Date", "DblHdr", "Day", "VisTm", "VisTmLg", "VisTmGNum", "HmTm",
-    "HmTmLg", "HmTmGNum", "VisRuns", "HmRuns", "NumOuts", "DayNight",
-    "Completion", "Forfeit", "Protest", "ParkID", "Attendance", "Duration",
-    "VisLine", "HmLine", "VisAB", "VisH", "VisD", "VisT", "VisHR",
-    "VisRBI", "VisSH", "VisSF", "VisHBP", "VisBB", "VisIBB", "VisK",
-    "VisSB", "VisCS", "VisGDP", "VisCI", "VisLOB", "VisPs", "VisER",
-    "VisTER", "VisWP", "VisBalks", "VisPO", "VisA", "VisE", "VisPassed",
-    "VisDB", "VisTP", "HmAB", "HmH", "HmD", "HmT", "HmHR", "HmRBI",
-    "HmSH", "HmSF", "HmHBP", "HmBB", "HmIBB", "HmK", "HmSB", "HmCS",
-    "HmGDP", "HmCI", "HmLOB", "HmPs", "HmER", "HmTER", "HmWP", "HmBalks",
-    "HmPO", "HmA", "HmE", "HmPass", "HmDB", "HmTP", "UmpHID", "UmpHNm",
-    "Ump1BID", "Ump1BNm", "Ump2BID", "Ump2BNm", "Ump3BID", "Ump3BNm",
-    "UmpLFID", "UmpLFNm", "UmpRFID", "UmpRFNm", "VisMgrID", "VisMgrNm",
-    "HmMgrID", "HmMgrNm", "WinPID", "WinPNm", "PID", "PNAme", "SavePID",
-    "SavePNm", "GWinRBIID", "GWinRBINm", "VisStPchID", "VisStPchNm",
-    "HmStPchID", "HmStPchNm", "VisBat1ID", "VisBat1Nm", "VisBat1Pos",
-    "VisBat2ID", "VisBat2Nm", "VisBat2Pos", "VisBat3ID", "VisBat3Nm",
-    "VisBat3Pos", "VisBat4ID", "VisBat4Nm", "VisBat4Pos", "VisBat5ID",
-    "VisBat5Nm", "VisBat5Pos", "VisBat6ID", "VisBat6Nm", "VisBat6Pos",
-    "VisBat7ID", "VisBat7Nm", "VisBat7Pos", "VisBat8ID", "VisBat8Nm",
-    "VisBat8Pos", "VisBat9ID", "VisBat9Nm", "VisBat9Pos", "HmBat1ID",
-    "HmBat1Nm", "HmBat1Pos", "HmBat2ID", "HmBat2Nm", "HmBat2Pos",
-    "HmBat3ID", "HmBat3Nm", "HmBat3Pos", "HmBat4ID", "HmBat4Nm",
-    "HmBat4Pos", "HmBat5ID", "HmBat5Nm", "HmBat5Pos", "HmBat6ID",
-    "HmBat6Nm", "HmBat6Pos", "HmBat7ID", "HmBat7Nm", "HmBat7Pos",
-    "HmBat8ID", "HmBat8Nm", "HmBat8Pos", "HmBat9ID", "HmBat9Nm",
-    "HmBat9Pos", "Additional", "Acquisition")
+# I use all of the names here even though I ultimately ignore most of the variables
+names(dataset) <-
+c(
+"Date",
+"DblHdr",
+"Day",
+"VisTm",
+"VisTmLg",
+"VisTmGNum",
+"HmTm",
+"HmTmLg",
+"HmTmGNum",
+"VisRuns",
+"HmRuns",
+"NumOuts",
+"DayNight",
+"Completion",
+"Forfeit",
+"Protest",
+"ParkID",
+"Attendance",
+"Duration",
+"VisLine",
+"HmLine",
+"VisAB",
+"VisH",
+"VisD",
+"VisT",
+"VisHR",
+"VisRBI",
+"VisSH",
+"VisSF",
+"VisHBP",
+"VisBB",
+"VisIBB",
+"VisK",
+"VisSB",
+"VisCS",
+"VisGDP",
+"VisCI",
+"VisLOB",
+"VisPs",
+"VisER",
+"VisTER",
+"VisWP",
+"VisBalks",
+"VisPO",
+"VisA",
+"VisE",
+"VisPassed",
+"VisDB",
+"VisTP",
+"HmAB",
+"HmH",
+"HmD",
+"HmT",
+"HmHR",
+"HmRBI",
+"HmSH",
+"HmSF",
+"HmHBP",
+"HmBB",
+"HmIBB",
+"HmK",
+"HmSB",
+"HmCS",
+"HmGDP",
+"HmCI",
+"HmLOB",
+"HmPs",
+"HmER",
+"HmTER",
+"HmWP",
+"HmBalks",
+"HmPO",
+"HmA",
+"HmE",
+"HmPass",
+"HmDB",
+"HmTP",
+"UmpHID",
+"UmpHNm",
+"Ump1BID",
+"Ump1BNm",
+"Ump2BID",
+"Ump2BNm",
+"Ump3BID",
+"Ump3BNm",
+"UmpLFID",
+"UmpLFNm",
+"UmpRFID",
+"UmpRFNm",
+"VisMgrID",
+"VisMgrNm",
+"HmMgrID",
+"HmMgrNm",
+"WinPID",
+"WinPNm",
+"PID",
+"PNAme",
+"SavePID",
+"SavePNm",
+"GWinRBIID",
+"GWinRBINm",
+"VisStPchID",
+"VisStPchNm",
+"HmStPchID",
+"HmStPchNm",
+"VisBat1ID",
+"VisBat1Nm",
+"VisBat1Pos",
+"VisBat2ID",
+"VisBat2Nm",
+"VisBat2Pos",
+"VisBat3ID",
+"VisBat3Nm",
+"VisBat3Pos",
+"VisBat4ID",
+"VisBat4Nm",
+"VisBat4Pos",
+"VisBat5ID",
+"VisBat5Nm",
+"VisBat5Pos",
+"VisBat6ID",
+"VisBat6Nm",
+"VisBat6Pos",
+"VisBat7ID",
+"VisBat7Nm",
+"VisBat7Pos",
+"VisBat8ID",
+"VisBat8Nm",
+"VisBat8Pos",
+"VisBat9ID",
+"VisBat9Nm",
+"VisBat9Pos",
+"HmBat1ID",
+"HmBat1Nm",
+"HmBat1Pos",
+"HmBat2ID",
+"HmBat2Nm",
+"HmBat2Pos",
+"HmBat3ID",
+"HmBat3Nm",
+"HmBat3Pos",
+"HmBat4ID",
+"HmBat4Nm",
+"HmBat4Pos",
+"HmBat5ID",
+"HmBat5Nm",
+"HmBat5Pos",
+"HmBat6ID",
+"HmBat6Nm",
+"HmBat6Pos",
+"HmBat7ID",
+"HmBat7Nm",
+"HmBat7Pos",
+"HmBat8ID",
+"HmBat8Nm",
+"HmBat8Pos",
+"HmBat9ID",
+"HmBat9Nm",
+"HmBat9Pos",
+"Additional",
+"Acquisition"
+)
 
-# Save dataset to a feather file?
-
-# Parse the box score. Possibly replace any ([0-9][0-9]) with a
-# character whose code is equal to the number of runs plus some number.
-# Then make the data long and convert those characters back to numbers.
-for(i in 10:47) {
-  dataset$HmLine <- str_replace_all(dataset$HmLine, paste0("\\(", i, "\\)"), paste0("\\",rawToChar(as.raw(i))))
-  dataset$VisLine <- str_replace_all(dataset$VisLine, paste0("\\(", i, "\\)"), paste0("\\",rawToChar(as.raw(i))))
-}
-
+# Retrosheet uses "x" when the bottom of the 9th was not played
+# because the home team was winning. Replace those "x" values
+# with 0.
 dataset$HmLine <- str_replace_all(dataset$HmLine, "x", 0)
 dataset$VisLine <- str_replace_all(dataset$VisLine, "x", 0)
 
-dataset <- dataset %>%
-  mutate(gamecode = paste(Date, VisTm, HmTm, DblHdr, sep = "_")) %>%
-  select(gamecode, Date, VisRuns, HmRuns, HmLine, VisLine) %>%
-  mutate(Date = ymd(Date)) %>%
-  mutate(winner = "tie") %>%
-  filter(!is.na(HmLine)) %>%
-  filter(!is.na(VisLine)) %>%
-  arrange(desc(Date))
+# Parse the box score
+# Each digit is equal to the number of runs scored in one inning.
+# The problem is that some innings see more than 9 runs scored.
+# This could be coded in many ways that would be much faster,
+# but for now it's a for loop that replaces all (xx) values with
+# single letters. That enables the use of strsplit to attribute
+# runs to the appropriate innings. The values are changed back
+# to their numerical equivilents later in the code.
+for (i in 10:47) {
+dataset$HmLine <-
+str_replace_all(dataset$HmLine,
+paste0("\\(", i, "\\)"),
+paste0("\\", rawToChar(as.raw(i))))
+dataset$VisLine <-
+str_replace_all(dataset$VisLine,
+paste0("\\(", i, "\\)"),
+paste0("\\", rawToChar(as.raw(i))))
+}
 
-# Remove all extra innings
+# Create the variable gamecode as the unique combination of four variables
+dataset <- dataset %>%
+mutate(gamecode = paste(Date, VisTm, HmTm, DblHdr, sep = "_")) %>%
+select(gamecode, Date, VisRuns, HmRuns, HmLine, VisLine) %>%
+mutate(Date = ymd(Date)) %>%
+mutate(winner = "tie") %>%
+filter(!is.na(HmLine)) %>%
+filter(!is.na(VisLine)) %>%
+arrange(desc(Date))
+
+# Remove extra innings.
+# You're not going to leave a game in overtime, are you?
 dataset$HmLine <- str_sub(dataset$HmLine, start = 1L, end = 9L)
 dataset$VisLine <- str_sub(dataset$VisLine, start = 1L, end = 9L)
 
-# Create one column for each half inning
-hmline <- str_split(dataset$HmLine, pattern = "", simplify = TRUE) %>% tbl_df()
-names(hmline) <- paste0("inning", 1:9, "hm")
-visline <- str_split(dataset$VisLine, pattern = "", simplify = TRUE) %>% tbl_df()
-names(visline) <- paste0("inning", 1:9, "vis")
+# Create one column for each half inning.
+# inning1-1 is the top of the first,
+# inning3-2 is the bottom of the third, etc. 
+hmline <-
+str_split(dataset$HmLine, pattern = "", simplify = TRUE) %>% tbl_df()
+names(hmline) <- paste0("inning", 1:9, "-2")
+visline <-
+str_split(dataset$VisLine, pattern = "", simplify = TRUE) %>% tbl_df()
+names(visline) <- paste0("inning", 1:9, "-1")
 
-for(i in 10:47) {
-  hmline <- apply(hmline, MARGIN = 2, function(x) str_replace_all(x, paste0("\\",rawToChar(as.raw(i))), i))
-  visline <- apply(visline, MARGIN = 2, function(x) str_replace_all(x, paste0("\\",rawToChar(as.raw(i))), i))
+for (i in 10:47) {
+hmline <-
+apply(hmline, MARGIN = 2, function(x)
+str_replace_all(x, paste0("\\", rawToChar(as.raw(
+i
+))), i))
+visline <-
+apply(visline, MARGIN = 2, function(x)
+str_replace_all(x, paste0("\\", rawToChar(as.raw(
+i
+))), i))
 }
 
-dataset <- select(dataset, -HmLine, -VisLine)
+# Replace the original box scores with the formatted scores
+dataset <- select(dataset,-HmLine,-VisLine)
 dataset <- cbind(dataset, hmline, visline)
 
-dataset[,6:23] <- apply(dataset[,6:23], MARGIN = 2, as.numeric)
+# Convert all runs to numeric
+dataset[, 6:23] <- apply(dataset[, 6:23], MARGIN = 2, as.numeric)
 
 # How many runs did each team score without counting extra innings?
-dataset$VisRunsReg <- apply(dataset[,6:14], MARGIN = 1, FUN = sum, na.rm = TRUE)
-dataset$HmRunsReg <- apply(dataset[,15:23], MARGIN = 1, FUN = sum, na.rm = TRUE)
-
+# In hindsight I could have used rowsum here
+dataset$VisRunsReg <-
+apply(dataset[, 15:23],
+MARGIN = 1,
+FUN = sum,
+na.rm = TRUE)
+dataset$HmRunsReg <-
+apply(dataset[, 6:14],
+MARGIN = 1,
+FUN = sum,
+na.rm = TRUE)
 dataset <- tbl_df(dataset)
+
+# Assign the winner column appropriately
+dataset$winner[dataset$HmRuns > dataset$VisRunsReg] <- "home"
+dataset$winner[dataset$HmRuns < dataset$VisRunsReg] <- "vis"
+
+# Create columns for each half-inning showing how many runs
+# the winner and loser scored in each half-inning.
+# By definition at least half of these columns will be 0.
+dataset[26:43] <- 0
+names(dataset)[26:34] <- paste0("inning", 1:9, "-win")
+dataset[dataset$winner == "home", 26:34] <-
+dataset[dataset$winner == "home", 6:14]
+dataset[dataset$winner == "vis", 26:34] <-
+dataset[dataset$winner == "vis", 15:23]
+
+names(dataset)[35:43] <- paste0("inning", 1:9, "-lose")
+dataset[dataset$winner == "vis", 35:43] <-
+dataset[dataset$winner == "vis", 6:14]
+dataset[dataset$winner == "home", 35:43] <-
+dataset[dataset$winner == "home", 15:23]
+
+# Drop most columns and convert from wide to long
+dataset <- dataset %>%
+  select(1, 5, 26:43) %>%
+  reshape2::melt(id.vars = c("gamecode", "winner")) %>%
+  mutate(variable = ordered(variable)) %>% # Make innings an ordered factor
+  arrange(gamecode, variable) %>% # Important for downstream analysis
+  separate(variable, into = c("inning", "team"), sep = "-") %>%
+  mutate(inning = str_sub(inning, -1, -1)) %>%
+  mutate(inning = as.numeric(inning)) %>%
+  tbl_df()
+  
+  
+dataset$team <- "tie"
+dataset$team[grepl("win", dataset$variable)] <- "win"
+dataset$team[grepl("lose", dataset$variable)] <- "lose"
 
 return(dataset)
 }
+
+games <- get_retrosheet()
 
 ```
 
@@ -136,9 +350,38 @@ Now that we have the data, let's look for trends that might affect our analysis.
 
 ```
 
+It's time to create an algorithm to determine the probability of a reversal when given a properly formatted dataset of scoring events throughout a collection of games. I'm naming this function "dad" because my father has traditionally been the one to determine when it's time to leave.
+
+```{r dad}
+dad <- function() {
+  return(TRUE)
+}
+```
+
 
 ```{r analysis}
 ### Perform analysis
 
 ```
 
+## Future development
+There are numerous potential future areas for the development of this project. The most intreguing is the addition of other sports.
+
+### Hockey
+
+### NASCAR
+
+### Basketball
+BasketballValue.com has event-level NBA data available for download covering the 2005-2006 through 2011-2012 seasons: http://basketballvalue.com/downloads.php
+
+Basketball Reference has scoring-level data, but it's not in a format that's machine-readable: http://www.basketball-reference.com/play-index/plus/event_finder.cgi?request=1&event_code=fg&year_id=2017&is_playoffs=N&team_id=PHI
+
+Drew Dresser has created a Python script for downloading ESPN basketball data: https://gist.github.com/drewdresser/8153408
+
+### Soccer
+OpenFootball has a massive database of soccer data. Its website references event-level data, but I haven't yet had a chance to explore: http://openfootball.github.io/news/
+
+Here's a broader view of available soccer data sources: https://www.jokecamp.com/blog/guide-to-football-and-soccer-data-and-apis/
+
+### Elections
+Maybe this approach could apply to presidential or Congressional elections. Given the relatively small number of elections that have accurate tracking data, I'd only include election data for entertainment value.
