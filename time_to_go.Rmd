@@ -342,6 +342,10 @@ return(dataset)
 
 games <- get_retrosheet()
 
+# Below are two temporary lines for dynamic analysis
+feather::write_feather(games, "games.feather")
+dataset <- games
+
 ```
 
 Now that we have the data, let's look for trends that might affect our analysis. For example, how common are runs in a baseball game? Has scoring changed since the 19th century?
@@ -364,18 +368,15 @@ dad <- function(dataset) {
   }
   
   dataset <- dataset %>%
-    group_by(gamecode, team) %>%
+    group_by(gamecode, inning, team) %>%
     mutate(score = cumsum(value)) %>%
-    filter(winner != "tie") %>%
-    group_by(gamecode, inning) %>%
-    arrange(team) %>%
-    summarise(win_lead = first(value, order_by = team))
-    
+    filter(winner != "tie")
+
+  # This part threw an error when I tried to include it in the pipeline
   dataset %>%
-    group_by(gamecode, team) %>%
-    mutate(score = cumsum(value)) %>%
-    filter(winner != "tie") %>%
-    filter(inning == 9)
+    group_by(gamecode, inning, team) %>%
+    arrange(gamecode, team) %>%
+    mutate(win_lead = first(value))
 
 }
 ```

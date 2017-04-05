@@ -1,0 +1,150 @@
+Here is the description of the text files:
+
+For all files "Game ID" is the key and = 4 digit season + 4 digit
+year #
+So game 7 of the 1999-00 season has Game ID = 19990007
+
+All files are delimited by | (uppercase \)
+
+
+Game File
+===========
+Game ID
+Home Team
+Home Goals
+Away Team
+Away Goals
+Game Date
+Game Time
+Arena
+Attendance
+Home Powerplay Time
+Visitors Powerplay Time
+Overtime Indictor
+
+
+Goal File
+=========
+Game ID
+Game Goal Number
+Period
+Time
+Team
+Player Name
+Scorer's Season Goal Number
+Goal Strength
+
+Assist File
+============
+Game ID
+Game Goal Number
+Assist Number (1st or 2nd assist on the goal)
+Player Name
+Player's Season Assist Number
+
+
+Plus-Minus File
+=================
+Game ID
+Game Goal Number
+Team
+For/Against indictor (either "F" or "A")
+Goal Strength
+Player Jersey Number
+
+
+Penalty File
+=============
+Game ID
+Team's Game Penalty Number
+Team
+Period
+Time
+Player
+Amount Of Penalty (in Minutes)
+Infraction Type (name of penalty)
+
+
+
+Period File
+============
+Game ID
+Team
+Home/Visitor indictor ("H" or "V")
+Period
+Number of Goals
+Shots on Goal
+Number of Penalties
+Minutes in Penalties
+Powerplay Goals
+Powerplay Opportunities
+Offensive Zone Time
+Defensive Zone Time
+Neutral Ice Zone Time
+
+(note - in this file there will also be a record where period = "T"
+which will give the totals)
+
+
+Goalie File
+=============
+Game ID
+Team
+Goalie Name
+Decision("W", "L" or "T" or blank)
+Minutes played
+
+
+Goalie Period File
+==============
+Game ID
+Team
+Goalie Name
+Period
+Shots Against
+Goals Against
+
+(note - in this file there will also be a record where period = "T"
+which will give the totals)
+
+
+Star File
+=========
+Game ID
+Star Number
+Star Team
+Player Name
+
+
+Official File
+=========
+Game ID
+Official Type (Referee or Linesman)
+Official Name
+
+
+Stats File
+=========
+Game ID
+Home/Visitor indictor ("H" or "V")
+Jersey Number
+Position
+Name
+Plus-Minus
+Time On Ice
+Number of Shifts
+Shots in period 1
+Shots in period 2
+Shots in period 3
+Shots in OT
+Total Shots
+Missed Shots
+Faceoff wins
+Faceoff losses
+Faceoff percent
+Number of penalties
+PIM
+Hits
+Takeaways
+Giveaways
+Blocked Shots
